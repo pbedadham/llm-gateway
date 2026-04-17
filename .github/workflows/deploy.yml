@@ -53,6 +53,7 @@ jobs:
   preflight:
     name: Preflight Checks
     runs-on: ubuntu-latest
+    environment: dev
     needs: changes
     if: |
       needs.changes.outputs.app_code == 'true' ||
@@ -89,6 +90,7 @@ jobs:
   infra-deploy:
     name: Infra Deploy
     runs-on: ubuntu-latest
+    environment: dev
     needs:
       - changes
       - preflight
@@ -127,6 +129,7 @@ jobs:
   app-deploy:
     name: App Deploy
     runs-on: ubuntu-latest
+    environment: dev
     needs:
       - changes
       - preflight
