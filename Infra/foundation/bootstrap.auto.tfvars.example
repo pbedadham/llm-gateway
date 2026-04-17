@@ -1,0 +1,3 @@
+aws_region      = "us-west-2"
+tf_state_bucket = "replace-me-terraform-state-bucket"
+tf_lock_table   = "replace-me-terraform-lock-table"
