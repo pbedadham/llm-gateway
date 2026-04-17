@@ -1,0 +1,74 @@
+name: App CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "App/**"
+      - ".github/workflows/app-ci.yml"
+  pull_request:
+    paths:
+      - "App/**"
+      - ".github/workflows/app-ci.yml"
+
+jobs:
+  app:
+    name: App Checks
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: App
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile application
+        run: python -m py_compile app/main.py
+
+      - name: Verify app import
+        run: python -c "import app.main; print(app.main.app.title)"
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: App
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t llm-gateway:ci .
+
+  kubernetes:
+    name: Kubernetes Manifest Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubeconform
+        run: |
+          curl -sSL -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform.tar.gz kubeconform
+          sudo mv kubeconform /usr/local/bin/kubeconform
+
+      - name: Validate manifests
+        run: kubeconform -strict -summary App/k8s/deployment.yml App/k8s/service.yml
