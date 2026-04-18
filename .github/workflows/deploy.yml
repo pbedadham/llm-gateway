@@ -16,7 +16,6 @@ permissions:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
-  EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'llm-gateway' }}
   TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
   TF_STATE_KEY: ${{ vars.TF_STATE_KEY || 'llm-gateway/terraform.tfstate' }}
@@ -69,7 +68,7 @@ jobs:
         run: |
           missing=0
 
-          for name in AWS_REGION EKS_CLUSTER_NAME TF_STATE_BUCKET TF_LOCK_TABLE; do
+          for name in AWS_REGION TF_STATE_BUCKET TF_LOCK_TABLE; do
             if [ -z "${!name}" ]; then
               echo "::error title=Missing variable::$name is not configured in GitHub Actions variables"
               missing=1
@@ -96,6 +95,9 @@ jobs:
       - preflight
     if: needs.changes.outputs.platform == 'true'
 
+    outputs:
+      cluster_name: ${{ steps.tf_outputs.outputs.cluster_name }}
+
     defaults:
       run:
         working-directory: Infra/platform
@@ -109,6 +111,11 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Verify Terraform backend resources exist
+        run: |
+          aws s3api head-bucket --bucket "$TF_STATE_BUCKET"
+          aws dynamodb describe-table --table-name "$TF_LOCK_TABLE" >/dev/null
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -125,6 +132,10 @@ jobs:
 
       - name: Terraform apply
         run: terraform apply -auto-approve
+
+      - name: Read Terraform outputs
+        id: tf_outputs
+        run: echo "cluster_name=$(terraform output -raw cluster_name)" >> "$GITHUB_OUTPUT"
 
   app-deploy:
     name: App Deploy
@@ -148,6 +159,25 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Read platform Terraform outputs
+        id: cluster
+        working-directory: Infra/platform
+        run: |
+          terraform init \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=$TF_STATE_KEY" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="dynamodb_table=$TF_LOCK_TABLE"
+          echo "name=$(terraform output -raw cluster_name)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify EKS cluster exists
+        run: aws eks describe-cluster --name "${{ steps.cluster.outputs.name }}" --region "$AWS_REGION" >/dev/null
 
       - name: Log in to Amazon ECR
         id: ecr-login
@@ -179,7 +209,7 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+        run: aws eks update-kubeconfig --name "${{ steps.cluster.outputs.name }}" --region "$AWS_REGION"
 
       - name: Install NVIDIA device plugin
         run: |

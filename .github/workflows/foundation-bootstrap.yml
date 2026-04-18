@@ -1,0 +1,83 @@
+name: Foundation Bootstrap
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Infra/foundation/**"
+      - ".github/workflows/foundation-bootstrap.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  bootstrap:
+    name: Bootstrap Foundation
+    runs-on: ubuntu-latest
+    environment: dev
+
+    defaults:
+      run:
+        working-directory: Infra/foundation
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate required configuration
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
+        run: |
+          missing=0
+
+          for name in AWS_REGION TF_STATE_BUCKET TF_LOCK_TABLE; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing variable::$name is not configured in GitHub Actions variables"
+              missing=1
+            fi
+          done
+
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "::error title=Missing secret::AWS_ROLE_ARN is not configured in GitHub Actions secrets"
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Write tfvars
+        run: |
+          cat > terraform.auto.tfvars <<EOF
+          aws_region      = "${AWS_REGION}"
+          tf_state_bucket = "${{ vars.TF_STATE_BUCKET }}"
+          tf_lock_table   = "${{ vars.TF_LOCK_TABLE }}"
+          EOF
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve
+
+      - name: Show outputs
+        run: terraform output
