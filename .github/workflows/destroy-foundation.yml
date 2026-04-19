@@ -14,6 +14,9 @@ permissions:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+  TF_STATE_KEY: ${{ vars.TF_STATE_KEY || 'llm-gateway/terraform.tfstate' }}
+  TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
 
 jobs:
   destroy:
@@ -35,6 +38,15 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Check platform state is already gone
+        run: |
+          if aws s3api head-bucket --bucket "$TF_STATE_BUCKET" 2>/dev/null; then
+            if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$TF_STATE_KEY" >/dev/null 2>&1; then
+              echo "::error title=Platform state still exists::Destroy Platform before destroying foundation. Found Terraform state object at s3://$TF_STATE_BUCKET/$TF_STATE_KEY"
+              exit 1
+            fi
+          fi
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3

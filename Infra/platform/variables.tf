@@ -8,7 +8,7 @@ variable "aws_region" {
 variable "cluster_name" {
   description = "EKS cluster name."
   type        = string
-  default     = "ai-infrastructure-2026"
+  default     = "llm-gateway-cluster"
 }
 
 variable "ecr_repository_name" {

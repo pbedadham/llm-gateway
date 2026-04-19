@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import openai
 
-app = FastAPI(title="SRE-AI-Bridge")
+app = FastAPI(title="llm-gateway")
 DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1")
 
 class Query(BaseModel):

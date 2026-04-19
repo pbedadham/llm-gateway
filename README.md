@@ -13,6 +13,7 @@ The focus is not just on calling an LLM API, but on understanding the surroundin
 - `App/`: application code, container image definition, Python dependencies, and Kubernetes manifests
 - `Infra/foundation/`: Terraform for shared foundation resources
 - `Infra/platform/`: Terraform for platform-specific resources
+- [ARCHITECTURE.md](/Users/pavanbedadham/Documents/Personnel/Tech/llm-gateway/ARCHITECTURE.md:1): system and deployment diagrams
 
 ## Application
 
