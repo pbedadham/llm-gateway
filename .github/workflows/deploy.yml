@@ -93,7 +93,7 @@ jobs:
     needs:
       - changes
       - preflight
-    if: needs.changes.outputs.platform == 'true'
+    if: needs.changes.outputs.platform == 'true' || github.event_name == 'workflow_dispatch'
 
     outputs:
       cluster_name: ${{ steps.tf_outputs.outputs.cluster_name }}
@@ -147,7 +147,7 @@ jobs:
       - infra-deploy
     if: |
       always() &&
-      (needs.changes.outputs.app_code == 'true' || needs.changes.outputs.app_k8s == 'true' || needs.changes.outputs.platform == 'true') &&
+      (needs.changes.outputs.app_code == 'true' || needs.changes.outputs.app_k8s == 'true' || needs.changes.outputs.platform == 'true' || github.event_name == 'workflow_dispatch') &&
       (needs.infra-deploy.result == 'success' || needs.infra-deploy.result == 'skipped')
 
     steps:
