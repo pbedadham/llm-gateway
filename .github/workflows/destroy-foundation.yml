@@ -1,0 +1,56 @@
+name: Destroy Foundation
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type DESTROY_FOUNDATION to continue"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
+jobs:
+  destroy:
+    name: Destroy Foundation
+    if: ${{ inputs.confirm == 'DESTROY_FOUNDATION' }}
+    runs-on: ubuntu-latest
+    environment: dev
+
+    defaults:
+      run:
+        working-directory: Infra/foundation
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+
+      - name: Write tfvars
+        run: |
+          cat > terraform.auto.tfvars <<EOF
+          aws_region      = "${AWS_REGION}"
+          tf_state_bucket = "${{ vars.TF_STATE_BUCKET }}"
+          tf_lock_table   = "${{ vars.TF_LOCK_TABLE }}"
+          EOF
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform destroy
+        run: terraform destroy -auto-approve
