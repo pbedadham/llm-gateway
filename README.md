@@ -189,7 +189,7 @@ The platform stack is configured to keep costs down by using:
 
 - Spot capacity for the managed node group
 - a small baseline size (`desired_size = 1`)
-- small general-purpose instance types (`t3.small`, `t3.medium`)
+- general-purpose 4-vCPU instance types (`t3.xlarge`, `t3a.xlarge`)
 
 Because this node group uses Spot, interruptions are expected. If you need higher availability, increase the node count or add a separate On-Demand node group.
 
@@ -290,9 +290,3 @@ This repository is intentionally lightweight. It is meant to serve as an experim
 - exposing AI capabilities through a simple gateway service
 - testing deployment patterns across application and infrastructure layers
 - iterating on ideas that are worth sharing publicly as work samples or learning updates
-
-## GitHub and LinkedIn summary
-
-If you want a short description for external profiles, use this:
-
-`Sandbox for experimenting with AI gateway exposure, deployment patterns, and infrastructure workflows using FastAPI, Kubernetes, and Terraform.`
