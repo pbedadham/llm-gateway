@@ -30,22 +30,14 @@ module "eks" {
   subnet_ids = data.aws_subnets.default.ids
 
   eks_managed_node_groups = {
-    gpu_nodes = {
+    app_nodes = {
       capacity_type  = "SPOT"
-      instance_types = ["g4dn.xlarge", "g5.xlarge", "g6.xlarge"]
-      ami_type       = "AL2023_x86_64_NVIDIA"
+      instance_types = ["t3.small", "t3.medium"]
+      ami_type       = "AL2023_x86_64_STANDARD"
 
       min_size     = 1
       max_size     = 3
       desired_size = 1
-
-      taints = {
-        hardware = {
-          key    = "hardware"
-          value  = "gpu"
-          effect = "NO_SCHEDULE"
-        }
-      }
     }
   }
 }

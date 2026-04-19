@@ -205,18 +205,8 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --name "${{ steps.cluster.outputs.name }}" --region "$AWS_REGION"
-
-      - name: Install NVIDIA device plugin
-        run: |
-          helm repo add nvdp https://nvidia.github.io/k8s-device-plugin
-          helm repo update
-          kubectl create namespace nvidia --dry-run=client -o yaml | kubectl apply -f -
-          helm upgrade --install nvdp nvdp/nvidia-device-plugin --namespace nvidia
 
       - name: Create application secret
         env:
