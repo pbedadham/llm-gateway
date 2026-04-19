@@ -1,4 +1,4 @@
 # Example file
 aws_region          = "us-west-2"
-cluster_name        = "ai-infrastructure-2026"
+cluster_name        = "llm-gateway-cluster"
 ecr_repository_name = "llm-gateway"
