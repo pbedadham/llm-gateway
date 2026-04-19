@@ -24,7 +24,7 @@ module "eks" {
   version = "~> 21.0"
 
   name               = var.cluster_name
-  kubernetes_version = "1.33"
+  kubernetes_version = "1.35"
 
   vpc_id     = data.aws_vpc.default.id
   subnet_ids = data.aws_subnets.default.ids
@@ -32,7 +32,7 @@ module "eks" {
   eks_managed_node_groups = {
     app_nodes = {
       capacity_type  = "SPOT"
-      instance_types = ["t3.small", "t3.medium"]
+      instance_types = ["t3.xlarge", "t3a.xlarge"]
       ami_type       = "AL2023_x86_64_STANDARD"
 
       min_size     = 1
