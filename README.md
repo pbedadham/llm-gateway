@@ -168,32 +168,29 @@ Each Terraform directory includes:
 
 ## AWS and EKS deployment flow
 
-This repository is currently structured as a GPU-enabled baseline for deploying the application to Amazon EKS, with cost control focused on low-cost GPU instances and Spot capacity.
+This repository is currently structured as a CPU-only baseline for deploying the application to Amazon EKS, with cost control focused on small Spot-backed worker nodes.
 
 What Terraform creates:
 
 - `Infra/foundation/`: an S3 bucket and DynamoDB table for Terraform state and locking
-- `Infra/platform/`: an ECR repository and an EKS cluster with a GPU-enabled managed node group using Spot instances
+- `Infra/platform/`: an ECR repository and an EKS cluster with a small Spot-backed CPU managed node group
 
 What you still do after Terraform:
 
 - build the application image
 - push the image to ECR
-- install the NVIDIA Kubernetes device plugin
 - create the Kubernetes secret for `OPENAI_API_KEY`
 - apply the Kubernetes manifests to the EKS cluster
 
-### GPU node group notes
+### Node group notes
 
-The platform stack is configured to prefer lower-cost GPU options by using:
+The platform stack is configured to keep costs down by using:
 
 - Spot capacity for the managed node group
 - a small baseline size (`desired_size = 1`)
-- multiple compatible instance types (`g4dn.xlarge`, `g5.xlarge`, and `g6.xlarge`) so EKS can choose from more Spot pools
+- small general-purpose instance types (`t3.small`, `t3.medium`)
 
-AWS describes G4 instances as a cost-effective GPU family, and EKS recommends multiple instance types for Spot-backed managed node groups to improve capacity availability.
-
-Because this node group uses Spot, interruptions are expected. If you need higher availability, increase the node count or add a separate On-Demand GPU node group.
+Because this node group uses Spot, interruptions are expected. If you need higher availability, increase the node count or add a separate On-Demand node group.
 
 ### 1. Create foundation resources
 
@@ -247,18 +244,7 @@ Replace `<ecr_repository_url>` with the Terraform output value.
 aws eks update-kubeconfig --region us-west-2 --name <cluster_name>
 ```
 
-### 5. Install the NVIDIA Kubernetes device plugin
-
-The deployment manifest requests `nvidia.com/gpu`, so the cluster must advertise GPU resources before the pods can schedule. AWS documents that EKS GPU nodes using AL2023 require the NVIDIA Kubernetes device plugin.
-
-```bash
-helm repo add nvdp https://nvidia.github.io/k8s-device-plugin
-helm repo update
-kubectl create namespace nvidia --dry-run=client -o yaml | kubectl apply -f -
-helm install nvdp nvdp/nvidia-device-plugin --namespace nvidia
-```
-
-### 6. Create the application secret
+### 5. Create the application secret
 
 Create a working secret manifest from the example file:
 
@@ -272,7 +258,7 @@ Set `stringData.api-key` in `App/k8s/secret.yml` to your OpenAI API key, then ap
 kubectl apply -f App/k8s/secret.yml
 ```
 
-### 7. Deploy the application
+### 6. Deploy the application
 
 Update the image reference in [App/k8s/deployment.yml](/Users/pavanbedadham/Documents/Personnel/Tech/llm-gateway/App/k8s/deployment.yml:1) to the real ECR image URL, then apply the manifests:
 
@@ -281,19 +267,13 @@ kubectl apply -f App/k8s/deployment.yml
 kubectl apply -f App/k8s/service.yml
 ```
 
-### 8. Verify the deployment
+### 7. Verify the deployment
 
 ```bash
 kubectl get pods
 kubectl get nodes
 kubectl get svc llm-gateway
 kubectl describe deployment llm-gateway
-```
-
-You can also confirm that the cluster exposes GPU capacity with:
-
-```bash
-kubectl describe nodes | grep -A5 nvidia.com/gpu
 ```
 
 If the service receives an external address, you can test it with:
