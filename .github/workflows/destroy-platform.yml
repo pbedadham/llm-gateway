@@ -17,6 +17,7 @@ env:
   TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
   TF_STATE_KEY: ${{ vars.TF_STATE_KEY || 'llm-gateway/terraform.tfstate' }}
   TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
+  CLUSTER_ADMIN_PRINCIPAL_ARN: ${{ vars.CLUSTER_ADMIN_PRINCIPAL_ARN }}
 
 jobs:
   destroy:
@@ -44,6 +45,21 @@ jobs:
           aws s3api head-bucket --bucket "$TF_STATE_BUCKET"
           aws dynamodb describe-table --table-name "$TF_LOCK_TABLE" >/dev/null
 
+      - name: Validate required configuration
+        run: |
+          missing=0
+
+          for name in AWS_REGION TF_STATE_BUCKET TF_LOCK_TABLE CLUSTER_ADMIN_PRINCIPAL_ARN; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing variable::$name is not configured in GitHub Actions variables"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -51,6 +67,9 @@ jobs:
 
       - name: Terraform init
         run: |
+          cat > terraform.auto.tfvars <<EOF
+          cluster_admin_principal_arn = "$CLUSTER_ADMIN_PRINCIPAL_ARN"
+          EOF
           terraform init \
             -backend-config="bucket=$TF_STATE_BUCKET" \
             -backend-config="key=$TF_STATE_KEY" \
