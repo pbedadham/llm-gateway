@@ -16,3 +16,8 @@ variable "ecr_repository_name" {
   type        = string
   default     = "llm-gateway"
 }
+
+variable "cluster_admin_principal_arn" {
+  description = "IAM principal ARN to grant EKS cluster admin access."
+  type        = string
+}
