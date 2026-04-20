@@ -31,8 +31,8 @@ module "eks" {
 
   eks_managed_node_groups = {
     app_nodes = {
-      capacity_type  = "SPOT"
-      instance_types = ["t3.xlarge", "t3a.xlarge"]
+      capacity_type  = "ON_DEMAND"
+      instance_types = ["m5.xlarge"]
       ami_type       = "AL2023_x86_64_STANDARD"
 
       min_size     = 1
