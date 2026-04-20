@@ -2,3 +2,4 @@
 aws_region          = "us-west-2"
 cluster_name        = "llm-gateway-cluster"
 ecr_repository_name = "llm-gateway"
+cluster_admin_principal_arn = "arn:aws:iam::<account-id>:user/<your-user-or-role>"
