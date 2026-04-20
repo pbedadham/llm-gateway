@@ -174,7 +174,7 @@ This repository is currently structured as a CPU-only baseline for deploying the
 What Terraform creates:
 
 - `Infra/foundation/`: an S3 bucket and DynamoDB table for Terraform state and locking
-- `Infra/platform/`: an ECR repository and an EKS cluster with a small Spot-backed CPU managed node group
+- `Infra/platform/`: a dedicated VPC, an ECR repository, and an EKS cluster with a small CPU managed node group
 
 What you still do after Terraform:
 
@@ -187,11 +187,16 @@ What you still do after Terraform:
 
 The platform stack is configured to keep costs down by using:
 
-- Spot capacity for the managed node group
 - a small baseline size (`desired_size = 1`)
-- general-purpose 4-vCPU instance types (`t3.xlarge`, `t3a.xlarge`)
+- general-purpose 4-vCPU instance type (`m5.xlarge`)
 
-Because this node group uses Spot, interruptions are expected. If you need higher availability, increase the node count or add a separate On-Demand node group.
+The platform stack also creates a dedicated VPC with:
+
+- public subnets for externally reachable load balancers
+- private subnets for EKS worker nodes
+- a NAT gateway for outbound node access
+
+This avoids relying on default VPC behavior and gives EKS nodes a more reliable path to join the cluster.
 
 ### 1. Create foundation resources
 
