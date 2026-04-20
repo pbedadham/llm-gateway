@@ -193,14 +193,14 @@ jobs:
       - name: Set image URI
         id: image
         run: |
-          if [ "${{ needs.changes.outputs.app_code }}" = "true" ]; then
+          if [ "${{ needs.changes.outputs.app_code }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "uri=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> "$GITHUB_OUTPUT"
           else
             echo "uri=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build and push image
-        if: needs.changes.outputs.app_code == 'true'
+        if: needs.changes.outputs.app_code == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v6
         with:
           context: App
