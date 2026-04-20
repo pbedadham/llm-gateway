@@ -76,5 +76,20 @@ jobs:
             -backend-config="region=$AWS_REGION" \
             -backend-config="dynamodb_table=$TF_LOCK_TABLE"
 
+      - name: Read cluster name
+        id: cluster
+        run: echo "name=$(terraform output -raw cluster_name)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name "${{ steps.cluster.outputs.name }}" --region "$AWS_REGION"
+
+      - name: Delete Kubernetes application resources
+        run: |
+          kubectl delete svc llm-gateway --ignore-not-found=true
+          kubectl delete deployment llm-gateway --ignore-not-found=true
+
       - name: Terraform destroy
         run: terraform destroy -auto-approve
