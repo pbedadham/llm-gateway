@@ -91,5 +91,10 @@ jobs:
           kubectl delete svc llm-gateway --ignore-not-found=true
           kubectl delete deployment llm-gateway --ignore-not-found=true
 
+      - name: Wait for AWS load balancer cleanup
+        run: |
+          echo "Waiting for Kubernetes-created load balancer resources to be released..."
+          sleep 180
+
       - name: Terraform destroy
         run: terraform destroy -auto-approve
