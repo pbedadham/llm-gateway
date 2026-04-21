@@ -3,11 +3,6 @@ output "cluster_name" {
   value       = module.eks.cluster_name
 }
 
-output "vpc_id" {
-  description = "VPC ID used by the EKS platform stack."
-  value       = module.vpc.vpc_id
-}
-
 output "ecr_repository_name" {
   description = "ECR repository name for application images."
   value       = aws_ecr_repository.llm_gateway.name
